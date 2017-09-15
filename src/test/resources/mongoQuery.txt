@@ -1,0 +1,7 @@
+// goldcoast is a sample twitter dataset collection
+
+db.goldcoast.aggregate(
+{ $match : { "lang" : { $eq : "en" }, retweeted_status : {$exists : false}, quoted_status: {$exists: false} } },
+{ $project: { "_id": 0, "text":1}},
+{ $limit : 50 },
+{ $out: "nlp"});

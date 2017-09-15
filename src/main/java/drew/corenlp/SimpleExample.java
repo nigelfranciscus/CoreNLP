@@ -67,8 +67,8 @@ public class SimpleExample {
         	String text = cur.toJson();
         	JSONObject jsonObj = new JSONObject(text);
             String textValue = jsonObj.getString("text").replaceAll("https?://\\S+\\s?", "").replaceAll("\\P{Print}", "");
-            //System.out.println(textValue);
-        }
+            System.out.println(textValue);
+        
         		
 		
 		// creates a StanfordCoreNLP object, with POS tagging, lemmatization,
@@ -78,11 +78,11 @@ public class SimpleExample {
 		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
 
 		// read some text from the file..
-		File inputFile = new File("src/test/resources/sample-content.txt");
-		String text = Files.toString(inputFile, Charset.forName("UTF-8"));
+		//File inputFile = new File("src/test/resources/sample-content.txt");
+		//String text = Files.toString(inputFile, Charset.forName("UTF-8"));
 
 		// create an empty Annotation just with the given text
-		Annotation document = new Annotation(text);
+		Annotation document = new Annotation(textValue);
 
 		// run all Annotators on this text
 		pipeline.annotate(document);
@@ -120,6 +120,8 @@ public class SimpleExample {
 		// along with a method for getting the most representative mention
 		// Both sentence and token offsets start at 1!
 		Map<Integer, CorefChain> graph = document.get(CorefChainAnnotation.class);
+		
+        }
 		
 		mongoClient.close();
 
