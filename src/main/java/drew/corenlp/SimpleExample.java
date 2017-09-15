@@ -6,7 +6,8 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
+import java.util.Arrays;
+import java.util.ArrayList;
 import com.google.common.io.Files;
 
 import edu.stanford.nlp.dcoref.CorefChain;
@@ -25,59 +26,103 @@ import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 
-/** A simple corenlp example ripped directly from the Stanford CoreNLP website using text from wikinews. */
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.MongoClient;
+import org.bson.Document;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.Block;
+import com.mongodb.DBCursor;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Filters;
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Projections.*;
+
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.ObjectMapper;
+
+import org.json.JSONObject;
+
+/**
+ * A simple corenlp example ripped directly from the Stanford CoreNLP website
+ * using text from wikinews.
+ */
 public class SimpleExample {
 
-  public static void main(String[] args) throws IOException {
-    // creates a StanfordCoreNLP object, with POS tagging, lemmatization, NER, parsing, and coreference resolution 
-    Properties props = new Properties();
-    props.put("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
-    StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
-    
-    // read some text from the file..
-    File inputFile = new File("src/test/resources/sample-content.txt");
-    String text = Files.toString(inputFile, Charset.forName("UTF-8"));
+	public static void main(String[] args) throws IOException {
+		
+		//Pretty printing JSON
+		ObjectMapper mapper = new ObjectMapper(); 
+		//System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(cur));
+		
+		// Mongo Initialization
+		MongoClient mongoClient = new MongoClient("localhost", 27017);
+		MongoDatabase  database = mongoClient.getDatabase("twitter");
+		MongoCollection<Document> collection = database.getCollection("nlp");
+		       
+        for (Document cur : collection.find().projection(new Document("_id", 0)
+                .append("text",1))) {
+        	String text = cur.toJson();
+        	JSONObject jsonObj = new JSONObject(text);
+            String textValue = jsonObj.getString("text").replaceAll("https?://\\S+\\s?", "").replaceAll("\\P{Print}", "");
+            //System.out.println(textValue);
+        }
+        		
+		
+		// creates a StanfordCoreNLP object, with POS tagging, lemmatization,
+		// NER, parsing, and coreference resolution
+		Properties props = new Properties();
+		props.put("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
+		StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
 
-    // create an empty Annotation just with the given text
-    Annotation document = new Annotation(text);
+		// read some text from the file..
+		File inputFile = new File("src/test/resources/sample-content.txt");
+		String text = Files.toString(inputFile, Charset.forName("UTF-8"));
 
-    // run all Annotators on this text
-    pipeline.annotate(document);
+		// create an empty Annotation just with the given text
+		Annotation document = new Annotation(text);
 
-    // these are all the sentences in this document
-    // a CoreMap is essentially a Map that uses class objects as keys and has values with custom types
-    List<CoreMap> sentences = document.get(SentencesAnnotation.class);
+		// run all Annotators on this text
+		pipeline.annotate(document);
 
-    for(CoreMap sentence: sentences) {
-      // traversing the words in the current sentence
-      // a CoreLabel is a CoreMap with additional token-specific methods
-      for (CoreLabel token: sentence.get(TokensAnnotation.class)) {
-        // this is the text of the token
-        String word = token.get(TextAnnotation.class);
-        // this is the POS tag of the token
-        String pos = token.get(PartOfSpeechAnnotation.class);
-        // this is the NER label of the token
-        String ne = token.get(NamedEntityTagAnnotation.class);
-        
-        System.out.println("word: " + word + " pos: " + pos + " ne:" + ne);
-      }
+		// these are all the sentences in this document
+		// a CoreMap is essentially a Map that uses class objects as keys and
+		// has values with custom types
+		List<CoreMap> sentences = document.get(SentencesAnnotation.class);
 
-      // this is the parse tree of the current sentence
-      Tree tree = sentence.get(TreeAnnotation.class);
-      System.out.println("parse tree:\n" + tree);
+		for (CoreMap sentence : sentences) {
+			// traversing the words in the current sentence
+			// a CoreLabel is a CoreMap with additional token-specific methods
+			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
+				// this is the text of the token
+				String word = token.get(TextAnnotation.class);
+				// this is the POS tag of the token
+				String pos = token.get(PartOfSpeechAnnotation.class);
+				// this is the NER label of the token
+				String ne = token.get(NamedEntityTagAnnotation.class);
 
-      // this is the Stanford dependency graph of the current sentence
-      SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-      System.out.println("dependency graph:\n" + dependencies);
-    }
+				System.out.println("word: " + word + " pos: " + pos + " ne:" + ne);
+			}
 
-    // This is the coreference link graph
-    // Each chain stores a set of mentions that link to each other,
-    // along with a method for getting the most representative mention
-    // Both sentence and token offsets start at 1!
-    Map<Integer, CorefChain> graph = 
-        document.get(CorefChainAnnotation.class);
-    
-  }
+			// this is the parse tree of the current sentence
+			Tree tree = sentence.get(TreeAnnotation.class);
+			System.out.println("parse tree:\n" + tree);
+
+			// this is the Stanford dependency graph of the current sentence
+			SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
+			System.out.println("dependency graph:\n" + dependencies);
+		}
+
+		// This is the coreference link graph
+		// Each chain stores a set of mentions that link to each other,
+		// along with a method for getting the most representative mention
+		// Both sentence and token offsets start at 1!
+		Map<Integer, CorefChain> graph = document.get(CorefChainAnnotation.class);
+		
+		mongoClient.close();
+
+	}
 
 }
