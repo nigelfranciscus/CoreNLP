@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.ArrayList;
 import com.google.common.io.Files;
 
@@ -119,14 +121,16 @@ public class SimpleExample {
 
 				// this is the Stanford dependency graph of the current sentence
 				SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-				System.out.println("dependency graph:\n" + dependencies);
+				//System.out.println("dependency graph:\n" + dependencies);
 
 				/*
 				 * The IndexedWord object is very similar to the CoreLabel
 				 * object only is used in the SemanticGraph context
-				 */
+				 */				
 				IndexedWord firstRoot = dependencies.getFirstRoot();
-				List<SemanticGraphEdge> incomingEdgesSorted = dependencies.getIncomingEdgesSorted(firstRoot);
+				
+				
+				/*List<SemanticGraphEdge> incomingEdgesSorted = dependencies.getIncomingEdgesSorted(firstRoot);
 
 				for (SemanticGraphEdge edge : incomingEdgesSorted) {
 					// Getting the target node with attached edges
@@ -137,19 +141,22 @@ public class SimpleExample {
 
 					// Get the relation name between them
 					GrammaticalRelation relation = edge.getRelation();
+				}*/
+
+				// this section is same as above just we retrieve the OutEdges
+				List<SemanticGraphEdge> outEdgesSorted = dependencies.getOutEdgesSorted(firstRoot);
+			        
+				for (SemanticGraphEdge edge : outEdgesSorted) {
+					
+					IndexedWord dep = edge.getDependent();
+					System.out.println("Dependent: " + dep);
+					
+					IndexedWord gov = edge.getGovernor();
+					System.out.println("Governor: " + gov);
+					
+					GrammaticalRelation relation = edge.getRelation();
+					System.out.println("Relation: " + relation + "\n");
 				}
-				
-				 // this section is same as above just we retrieve the OutEdges
-			    List<SemanticGraphEdge> outEdgesSorted = dependencies.getOutEdgesSorted(firstRoot);
-			    for(SemanticGraphEdge edge : outEdgesSorted)
-			    {
-			        IndexedWord dep = edge.getDependent();
-			        System.out.println("Dependent: " + dep);
-			        IndexedWord gov = edge.getGovernor();
-			        System.out.println("Governor: " + gov);
-			        GrammaticalRelation relation = edge.getRelation();
-			        System.out.println("Relation: " + relation + "\n");
-			   }
 
 			}
 
@@ -157,7 +164,8 @@ public class SimpleExample {
 			// Each chain stores a set of mentions that link to each other,
 			// along with a method for getting the most representative mention
 			// Both sentence and token offsets start at 1!
-			//Map<Integer, CorefChain> graph = document.get(CorefChainAnnotation.class);
+			// Map<Integer, CorefChain> graph =
+			// document.get(CorefChainAnnotation.class);
 		}
 
 		mongoClient.close();
