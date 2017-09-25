@@ -1,6 +1,7 @@
 package drew.corenlp;
 
 import java.io.File;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -36,19 +37,20 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.MongoClient;
 import org.bson.Document;
 
-import com.mongodb.BasicDBObject;
+/*import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
 import com.mongodb.DBCursor;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Filters;
 import static com.mongodb.client.model.Filters.*;
-import static com.mongodb.client.model.Projections.*;
+import static com.mongodb.client.model.Projections.*;*/
 
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.ObjectMapper;
-
 import org.json.JSONObject;
+
+import org.neo4j.driver.v1.*;
 
 /**
  * A simple corenlp example ripped directly from the Stanford CoreNLP website
@@ -167,6 +169,11 @@ public class SimpleExample {
 			// Map<Integer, CorefChain> graph =
 			// document.get(CorefChainAnnotation.class);
 		}
+		
+		//neo4j
+		
+		Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "ultrasafe" ) );
+		
 
 		mongoClient.close();
 
