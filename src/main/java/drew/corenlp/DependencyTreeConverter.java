@@ -49,25 +49,36 @@ import static com.mongodb.client.model.Projections.*;*/
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.json.JSONObject;
-
-import org.neo4j.driver.v1.*;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexHits;
 
 /**
  * A simple corenlp example ripped directly from the Stanford CoreNLP website
  * using text from wikinews.
  */
-public class SimpleExample {
+public class DependencyTreeConverter {
 
-	public static void main(String[] args) throws IOException {
+	private GraphDatabaseService neo4jService;
+	private MongoDatabase mongoDatabase;
+
+	public DependencyTreeConverter(GraphDatabaseService p_neo4jService, MongoDatabase p_mongoDatabase) {
+		neo4jService = p_neo4jService;
+		mongoDatabase = p_mongoDatabase;
+	}
+
+	public void convertTwitt() throws IOException {
 
 		// Pretty printing JSON
 		ObjectMapper mapper = new ObjectMapper();
 		// System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(cur));
-
-		// Mongo Initialization
-		MongoClient mongoClient = new MongoClient("localhost", 27017);
-		MongoDatabase database = mongoClient.getDatabase("twitter");
-		MongoCollection<Document> collection = database.getCollection("nlp");
+		MongoCollection<Document> collection = mongoDatabase.getCollection("nlp");
 
 		for (Document cur : collection.find().projection(new Document("_id", 0).append("text", 1))) {
 			String text = cur.toJson();
@@ -123,41 +134,109 @@ public class SimpleExample {
 
 				// this is the Stanford dependency graph of the current sentence
 				SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-				//System.out.println("dependency graph:\n" + dependencies);
+				List<IndexedWord> twitWords = dependencies.getAllNodesByWordPattern(".*");
+
+				try (Transaction tx = neo4jService.beginTx()) {
+					for (IndexedWord word : twitWords) {
+						Node existingNode = neo4jService.findNode(DynamicLabel.label("word"), "text",
+								word.originalText());
+						if (existingNode != null) {
+							// skip the dulicate word
+							continue;
+						}
+
+						Node wordNode = neo4jService.createNode();
+						wordNode.addLabel(DynamicLabel.label("word"));
+						wordNode.setProperty("text", word.originalText());
+						wordNode.setProperty("tag", word.tag());
+
+					}
+					tx.success();
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
+
+				try (Transaction tx = neo4jService.beginTx()) {
+					for (IndexedWord word1 : twitWords) {
+
+						@SuppressWarnings("deprecation")
+						Node word1Node = neo4jService.findNode(DynamicLabel.label("word"), "text",
+								word1.originalText());
+
+						if (word1Node != null) {
+							for (IndexedWord word2 : twitWords) {
+								SemanticGraphEdge edge = dependencies.getEdge(word1, word2);
+								if (edge != null) {
+									Iterable<Relationship> relationShips = word1Node.getRelationships();
+									Node word2Node = neo4jService.findNode(DynamicLabel.label("word"), "text",
+											word2.originalText());
+
+
+									if (word2Node != null) {
+
+										boolean skip = false;
+										for(Relationship relationShip : relationShips){
+											if(relationShip.getEndNode().equals(word2Node))
+											{
+												relationShip.setProperty("frequency", (Integer)relationShip.getProperty("frequency") + 1);
+												skip = true;
+												break;
+											}
+										}
+										
+										if(skip){
+											continue;
+										}
+										
+										Relationship newRelation = word1Node.createRelationshipTo(word2Node,
+												DynamicRelationshipType.withName("_"));
+										newRelation.setProperty("frequency", 1);
+										
+									}
+
+								}
+							}
+						}
+					}
+					tx.success();
+				} catch (Exception ex) {
+					ex.printStackTrace();
+				}
 
 				/*
 				 * The IndexedWord object is very similar to the CoreLabel
 				 * object only is used in the SemanticGraph context
-				 */				
+				 */
 				IndexedWord firstRoot = dependencies.getFirstRoot();
-				
-				
-				/*List<SemanticGraphEdge> incomingEdgesSorted = dependencies.getIncomingEdgesSorted(firstRoot);
 
-				for (SemanticGraphEdge edge : incomingEdgesSorted) {
-					// Getting the target node with attached edges
-					IndexedWord dep = edge.getDependent();
-
-					// Getting the source node with attached edges
-					IndexedWord gov = edge.getGovernor();
-
-					// Get the relation name between them
-					GrammaticalRelation relation = edge.getRelation();
-				}*/
+				/*
+				 * List<SemanticGraphEdge> incomingEdgesSorted =
+				 * dependencies.getIncomingEdgesSorted(firstRoot);
+				 * 
+				 * for (SemanticGraphEdge edge : incomingEdgesSorted) { //
+				 * Getting the target node with attached edges IndexedWord dep =
+				 * edge.getDependent();
+				 * 
+				 * // Getting the source node with attached edges IndexedWord
+				 * gov = edge.getGovernor();
+				 * 
+				 * // Get the relation name between them GrammaticalRelation
+				 * relation = edge.getRelation(); }
+				 */
 
 				// this section is same as above just we retrieve the OutEdges
 				List<SemanticGraphEdge> outEdgesSorted = dependencies.getOutEdgesSorted(firstRoot);
-			        
+
 				for (SemanticGraphEdge edge : outEdgesSorted) {
-					
+
 					IndexedWord dep = edge.getDependent();
-					System.out.println("Dependent: " + dep);
-					
+					// System.out.println("Dependent: " + dep);
+
 					IndexedWord gov = edge.getGovernor();
-					System.out.println("Governor: " + gov);
-					
+					// System.out.println("Governor: " + gov);
+
 					GrammaticalRelation relation = edge.getRelation();
-					System.out.println("Relation: " + relation + "\n");
+					// System.out.println("Relation: " + relation + "\n");
 				}
 
 			}
@@ -169,14 +248,5 @@ public class SimpleExample {
 			// Map<Integer, CorefChain> graph =
 			// document.get(CorefChainAnnotation.class);
 		}
-		
-		//neo4j
-		
-		Driver driver = GraphDatabase.driver( "bolt://localhost:7687", AuthTokens.basic( "neo4j", "ultrasafe" ) );
-		
-
-		mongoClient.close();
-
 	}
-
 }

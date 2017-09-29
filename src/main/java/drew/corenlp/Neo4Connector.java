@@ -7,16 +7,38 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.TransactionWork;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
 import static org.neo4j.driver.v1.Values.parameters;
 
-public class Neo4jExample implements AutoCloseable
-{
-    private final Driver driver;
+import java.io.File;
 
-    public Neo4jExample( String uri, String user, String password )
+public class Neo4Connector implements AutoCloseable
+{
+    private Driver driver;
+
+	private GraphDatabaseService graphDataService;
+
+    
+    public  Driver getDriver()
     {
-        driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
+    	return driver;
     }
+    
+    public Neo4Connector( String uri, String user, String password )
+    {
+       // driver = GraphDatabase.driver( uri, AuthTokens.basic( user, password ) );
+
+		File file = new File("C:/Users/s2876731.STAFF/Documents/Neo4jj");
+		graphDataService = new GraphDatabaseFactory().newEmbeddedDatabase(file);
+    }
+    
+
+	
+	public GraphDatabaseService getNeo4jService(){
+		return graphDataService;
+	}
 
     @Override
     public void close() throws Exception
@@ -44,12 +66,4 @@ public class Neo4jExample implements AutoCloseable
         }
 
 	}
-
-	public static void main(String[] args) throws Exception
-    {
-        try ( Neo4jExample greeter = new Neo4jExample( "bolt://localhost:7687", "neo4j", "ultrasafe" ) )
-        {
-            greeter.printGreeting( "hello, world" );
-        }
-    }
 }
