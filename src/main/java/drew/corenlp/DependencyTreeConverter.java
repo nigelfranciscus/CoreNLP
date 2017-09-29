@@ -171,27 +171,26 @@ public class DependencyTreeConverter {
 									Node word2Node = neo4jService.findNode(DynamicLabel.label("word"), "text",
 											word2.originalText());
 
-
 									if (word2Node != null) {
 
 										boolean skip = false;
-										for(Relationship relationShip : relationShips){
-											if(relationShip.getEndNode().equals(word2Node))
-											{
-												relationShip.setProperty("frequency", (Integer)relationShip.getProperty("frequency") + 1);
+										for (Relationship relationShip : relationShips) {
+											if (relationShip.getEndNode().equals(word2Node)) {
+												relationShip.setProperty("frequency",
+														(Integer) relationShip.getProperty("frequency") + 1);
 												skip = true;
 												break;
 											}
 										}
-										
-										if(skip){
+
+										if (skip) {
 											continue;
 										}
-										
+
 										Relationship newRelation = word1Node.createRelationshipTo(word2Node,
 												DynamicRelationshipType.withName("_"));
 										newRelation.setProperty("frequency", 1);
-										
+
 									}
 
 								}
