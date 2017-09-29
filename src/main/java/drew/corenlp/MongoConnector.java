@@ -2,10 +2,12 @@ package drew.corenlp;
 
 import java.io.File;
 
+import org.bson.Document;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
 public class MongoConnector {
