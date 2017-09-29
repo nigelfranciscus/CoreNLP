@@ -52,22 +52,17 @@
 			<artifactId>mongo-java-driver</artifactId>
 			<version>3.5.0</version>
 		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.neo4j/neo4j-kernel -->
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-kernel</artifactId>
 			<version>3.2.2</version>
 		</dependency>
-
-
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
 			<version>3.2.2</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.neo4j.driver</groupId>
 			<artifactId>neo4j-java-driver</artifactId>
@@ -83,20 +78,15 @@
 			<artifactId>json</artifactId>
 			<version>20160810</version>
 		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.apache.lucene/lucene-codecs -->
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-codecs</artifactId>
 			<version>5.5.0</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.lucene/lucene-core -->
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-core</artifactId>
 			<version>5.5.0</version>
 		</dependency>
-
-
 	</dependencies>
 </project>

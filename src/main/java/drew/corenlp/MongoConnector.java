@@ -12,21 +12,19 @@ public class MongoConnector {
 
 	private MongoClient mongoClient;
 	private MongoDatabase database;
-	
-	public MongoConnector(String url, int port, String databaseName)
-	{
+
+	public MongoConnector(String url, int port, String databaseName) {
 		// Mongo Initialization
 		mongoClient = new MongoClient(url, port);
 		database = mongoClient.getDatabase(databaseName);
-		
+
 	}
-	
-	
-	public void closeDB(){
+
+	public void closeDB() {
 		mongoClient.close();
 	}
-	
-	public MongoDatabase getDatabase(){
+
+	public MongoDatabase getDatabase() {
 		return database;
 	}
 }
